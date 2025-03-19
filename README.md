@@ -1,28 +1,40 @@
 # Solana::Rails
 
-TODO: Delete this and the text below, and describe your gem
+This is a Rails wrapper for the [Solana RPC API](https://solana.com/docs/rpc).
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/solana/rails`. To experiment with that code, run `bin/console` for an interactive prompt.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
+Add this line to your application's Gemfile:
 
 ```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+gem 'UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG'
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+And then execute:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+    $ bundle install
+```
+
+Or install it yourself as:
+
+```bash
+    $ gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
 ```
 
 ## Usage
 
-TODO: Write usage instructions here
+The default endpoint for the Solana::Rails.client is the Solana Mainnet. If you wish to connect to another network (Devnet or Testnet), you can specify the URL.
+
+    require 'solana_rails'
+
+    # Initialize the client (defaults to Mainnet(https://api.mainnet-beta.solana.com))
+    client = SolanaRails::HttpClient.new()
+
+    # Optionally, provide a URL
+    # client = SolanaRails::HttpClient.new("https://api.devnet.solana.com")
+
 
 ## Development
 
