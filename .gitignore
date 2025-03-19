@@ -1,3 +1,4 @@
+
 *.rbc
 capybara-*.html
 .rspec
@@ -67,3 +68,13 @@ yarn-debug.log*
 /storage/*
 !/storage/.keep
 /public/uploads
+
+# github generated
+/.bundle/
+/.yardoc
+/_yardoc/
+/coverage/
+/doc/
+/pkg/
+/spec/reports/
+
