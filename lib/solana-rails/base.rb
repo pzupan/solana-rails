@@ -1,7 +1,7 @@
 require 'base58'
 require 'base64'
 
-module Solana
+module SolanaRails
   module Base
 
     TOKEN_PROGRAM_ID = 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
@@ -11,18 +11,6 @@ module Solana
     SYSVAR_RENT_ID = 'SysvarRent111111111111111111111111111111111'
 
     PACKET_DATA_SIZE = 1232
-
-    module MAINNET
-      URL = "api.mainnet-beta.solana.com"
-    end
-
-    module TESTNET
-      URL = 'api.testnet.solana.com'
-    end
-
-    module DEVNET
-      URL = 'api.devnet.solana.com'
-    end
 
     module InstructionType
       CREATE_ACCOUNT            = 0
@@ -55,5 +43,5 @@ module Solana
       Base64.strict_decode64(base64)
     end
   end
-  Utils.freeze
+  Base.freeze
 end

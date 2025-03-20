@@ -4,12 +4,21 @@ require 'json'
 require 'thread'
 
 require_relative 'base'
+require_relative 'http_methods'
+require_relative 'websocket_methods'
 
-module Solana
+module SolanaRails
   class Client
+
+    include HttpMethods
+    include WebsocketMethods
+
+    # mainnet-beta
+    # testnet
+    # devnet
     
-    def initialize(api_endpoint = Solana::Base::MAINNET)
-      @api_endpoint = api_endpoint
+    def initialize(api_network='mainnet-beta')
+      @api_network = api_network
     end
 
     private
@@ -22,7 +31,7 @@ module Solana
       }
       body[:params] = params if params
 
-      HTTPX.post("https://#{@api_endpoint::URL}", json: body).then do |response|
+      HTTPX.post("https://api.#{@api_network}.solana.com", json: body).then do |response|
         handle_response_http(response, &block)
       rescue => e
         puts "HTTP request failed: #{e}"
@@ -45,7 +54,7 @@ module Solana
     def request_ws(method, params = nil, &block)
       result_queue = Queue.new
       EM.run do
-        ws = Faye::WebSocket::Client.new("wss://#{@api_endpoint::URL}")
+        ws = Faye::WebSocket::Client.new("wss://api.#{@api_network}.solana.com")
 
         ws.on :open do |event|
           body = {

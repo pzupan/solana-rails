@@ -30,10 +30,13 @@ The default endpoint for the Solana::Rails.client is the Solana Mainnet. If you 
     require 'solana_rails'
 
     # Initialize the client (defaults to Mainnet(https://api.mainnet-beta.solana.com))
-    client = SolanaRails::HttpClient.new()
+    client = SolanaRails::Client.new
 
-    # Optionally, provide a URL
-    # client = SolanaRails::HttpClient.new("https://api.devnet.solana.com")
+    # Optionally, provide a network
+    # client = SolanaRails::Client.new('devnet')
+
+    # Then use the Solana RPC method (parameterized)
+    client.get_balance(pubkey)
 
 
 ## Development
