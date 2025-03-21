@@ -5,18 +5,19 @@ require 'thread'
 
 require_relative 'base'
 require_relative 'http_methods'
+require_relative 'transaction_methods'
 require_relative 'websocket_methods'
+require_relative 'token/token_methods'
 
 module SolanaRails
   class Client
 
     include HttpMethods
+    include TokenMethods
+    include TransactionMethods
     include WebsocketMethods
 
-    # mainnet-beta
-    # testnet
-    # devnet
-    
+    # mainnet-beta, testnet or devnet
     def initialize(api_network='mainnet-beta')
       @api_network = api_network
     end

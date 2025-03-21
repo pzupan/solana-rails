@@ -38,7 +38,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'base58', '~> 0.2.3'
   spec.add_dependency 'base64', '~> 0.2.0'
   spec.add_dependency 'rbnacl', '~> 7.1'
-  spec.add_dependency 'ed25519'
+  #spec.add_dependency 'ed25519'
 
   # For more information and examples about making a new gem, check out our
   # guide at: https://bundler.io/guides/creating_gem.html
