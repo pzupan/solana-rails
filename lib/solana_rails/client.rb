@@ -7,13 +7,13 @@ require_relative 'base'
 require_relative 'http_methods'
 require_relative 'transaction_methods'
 require_relative 'websocket_methods'
-require_relative 'token/token_methods'
+require_relative 'token/http_methods'
 
 module SolanaRails
   class Client
 
     include HttpMethods
-    include TokenMethods
+    include Token::HttpMethods
     include TransactionMethods
     include WebsocketMethods
 

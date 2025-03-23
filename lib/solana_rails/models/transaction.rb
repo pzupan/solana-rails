@@ -3,6 +3,8 @@ require 'rbnacl'
 module SolanaRails
 
   class Transaction
+
+    include SolanaRails::Base
     
     SIGNATURE_LENGTH = 64
     PACKET_DATA_SIZE = 1280 - 40 - 8
@@ -55,11 +57,11 @@ module SolanaRails
       end
 
       raise 'no_signatures_found' if signatures.blank?
-
+      true
     end
 
     def serialize
-      transaction = Utils.encode_length(signatures.length)
+      transaction = Base.encode_compact_u16(signatures.length)
       signatures.each do |signature|
         raise 'signature_has_invalid_length' unless (signature.length == 64)
         transaction += signature

@@ -1,7 +1,11 @@
+require_relative '../data_types/layout'
+
 module SolanaRails
   
   class Message
     PUBKEY_LENGTH = 32
+
+    include SolanaRails::Base
 
     def initialize(**args)
       @account_keys          = args[:account_keys]
@@ -51,15 +55,15 @@ module SolanaRails
 
     def serialize
       num_keys = account_keys.length
-      key_count = Utils.encode_length(num_keys)
+      key_count = Base.encode_compact_u16(num_keys)
 
-      layout = SolanaRuby::DataTypes::Layout.new({
+      layout = SolanaRails::DataTypes::Layout.new({
         num_required_signatures: :blob1,
         num_readonly_signed_accounts: :blob1,
         num_readonly_unsigned_accounts: :blob1,
-        key_count: SolanaRuby::DataTypes::Blob.new(key_count.length),
-        keys: SolanaRuby::DataTypes::Sequence.new(num_keys, SolanaRuby::DataTypes::Blob.new(32)),
-        recent_blockhash: SolanaRuby::DataTypes::Blob.new(32)
+        key_count: SolanaRails::DataTypes::Blob.new(key_count.length),
+        keys: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::Blob.new(32)),
+        recent_blockhash: SolanaRails::DataTypes::Blob.new(32)
       })
 
       sign_data = layout.serialize({
@@ -67,25 +71,25 @@ module SolanaRails
         num_readonly_signed_accounts: header.num_readonly_signed_accounts,
         num_readonly_unsigned_accounts: header.num_readonly_unsigned_accounts,
         key_count: key_count,
-        keys: account_keys.map{ |k| Utils.base58_to_bytes(k) },
-        recent_blockhash: Utils.base58_to_bytes(recent_blockhash)
+        keys: account_keys.map{ |k| Base.base58_to_bytes(k) },
+        recent_blockhash: Base.base58_to_bytes(recent_blockhash)
       })
 
-      instruction_count = Utils.encode_length(instructions.length)
+      instruction_count = Base.encode_compact_u16(instructions.length)
       sign_data += instruction_count
 
       data = instructions.map do |instruction|
 
-        instruction_layout = SolanaRuby::DataTypes::Layout.new({
+       instruction_layout = SolanaRails::DataTypes::Layout.new({
           program_id_index: :uint8,
-          key_indices_count: SolanaRuby::DataTypes::Blob.new(key_count.length),
-          key_indices: SolanaRuby::DataTypes::Sequence.new(num_keys, SolanaRuby::DataTypes::Blob.new(8)),
-          data_length: SolanaRuby::DataTypes::Blob.new(key_count.length),
-          data: SolanaRuby::DataTypes::Sequence.new(num_keys, SolanaRuby::DataTypes::UnsignedInt.new(8)),
-        })
+          key_indices_count: SolanaRails::DataTypes::Blob.new(key_count.length),
+          key_indices: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::Blob.new(8)),
+          data_length: SolanaRails::DataTypes::Blob.new(key_count.length),
+          data: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::UnsignedInt.new(8)),
+       })
 
-        key_indices_count = Utils.encode_length(instruction.accounts.length)
-        data_count = Utils.encode_length(instruction.data.length)
+        key_indices_count = Base.encode_compact_u16(instruction.accounts.length)
+        data_count = Base.encode_compact_u16(instruction.data.length)
 
         instruction_layout.serialize({
           program_id_index: instruction.program_id_index,
