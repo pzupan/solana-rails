@@ -6,9 +6,9 @@ module SolanaRails
 
     include SolanaRails::Base
     
-    SIGNATURE_LENGTH = 64
-    PACKET_DATA_SIZE = 1280 - 40 - 8
-    DEFAULT_SIGNATURE = Array.new(64, 0)
+    SIGNATURE_LENGTH         = 64
+    MAXIMUM_TRANSACTION_SIZE = 1280 - 40 - 8 # 1232
+    DEFAULT_SIGNATURE        = Array.new(64, 0)
 
     def initialize(**args)
       @message = args[:message]
@@ -38,6 +38,7 @@ module SolanaRails
       raise 'must_include_at_least_one_keypair' if pubkeys.blank?
 
       message.account_keys.each do |pubkey|
+        debugger
         # get keypairs in sequence with account_keys
         keypair = payer_keypairs.detect{ |kp| kp[:public_key] == pubkey }
 
@@ -70,10 +71,9 @@ module SolanaRails
     end
 
     def to_hash
-      { transaction: {
-          message: message.to_hash,
-          signatures: signatures
-        }
+      {
+        signatures: signatures,
+        message: message.to_hash
       }
     end
 
@@ -82,7 +82,9 @@ module SolanaRails
     end
 
     def to_base64
-      Base64.strict_encode64(serialize.pack('C*'))
+      transaction = Base64.strict_encode64(serialize.pack('C*'))
+      raise 'exceeds_maximum_transaction_size' if transaction.bytesize > MAXIMUM_TRANSACTION_SIZE
+      transaction
     end
 
   end

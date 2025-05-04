@@ -13,6 +13,9 @@ module SolanaRails
       @recent_blockhash      = args[:recent_blockhash]      || ''
       @instructions          = args[:instructions]          || []
       @address_table_lookups = args[:address_table_lookups] || []
+      @program_id_index      = args[:program_id_index]      || nil
+      @account_indexes       = args[:account_indexes]       ||
+      @data                  = args[:data]                  || []
 
       error_check_account_keys
       error_check_header
@@ -28,6 +31,9 @@ module SolanaRails
           header:           transaction_instruction.header,
           recent_blockhash: transaction_instruction.recent_blockhash,
           instructions:     transaction_instruction.instructions,
+          program_id_index: transaction_instruction.program_id_index,
+          account_indexes:  transaction_instruction.account_indexes,
+          data:             transaction_instruction.data
         )
       end
 
@@ -35,6 +41,10 @@ module SolanaRails
 
     def account_keys
       @account_keys.map{ |ac| JSON.parse(ac.to_json, object_class: OpenStruct) }
+    end
+
+    def account_indexes
+      @account_indexes
     end
 
     def header
@@ -45,8 +55,16 @@ module SolanaRails
       @instructions.map{ |i| JSON.parse(i.to_json, object_class: OpenStruct) }
     end
 
+    def program_id_index
+      @program_id_index
+    end
+
     def recent_blockhash
       @recent_blockhash
+    end
+
+    def data
+      @data
     end
 
     def address_table_lookups
@@ -54,61 +72,55 @@ module SolanaRails
     end
 
     def serialize
-      num_keys = account_keys.length
-      key_count = Base.encode_compact_u16(num_keys)
 
-      layout = SolanaRails::DataTypes::Layout.new({
-        num_required_signatures: :blob1,
-        num_readonly_signed_accounts: :blob1,
-        num_readonly_unsigned_accounts: :blob1,
-        key_count: SolanaRails::DataTypes::Blob.new(key_count.length),
-        keys: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::Blob.new(32)),
-        recent_blockhash: SolanaRails::DataTypes::Blob.new(32)
-      })
+      # header specifies the number of signer and read-only accounts
+      # 3 bytes
+      #  1. u8 number of signatures required for this message to be considered valid, signer must be first key in account keys,
+      #  2. u8 number of signed keys that are read only
+      #  3. u8 number of unsigned keys that are read only
+      message_header = [
+        header.num_required_signatures,
+        header.num_readonly_signed_accounts,
+        header.num_readonly_unsigned_accounts
+      ]
 
-      sign_data = layout.serialize({
-        num_required_signatures: header.num_required_signatures,
-        num_readonly_signed_accounts: header.num_readonly_signed_accounts,
-        num_readonly_unsigned_accounts: header.num_readonly_unsigned_accounts,
-        key_count: key_count,
-        keys: account_keys.map{ |k| Base.base58_to_bytes(k) },
-        recent_blockhash: Base.base58_to_bytes(recent_blockhash)
-      })
+      # account addresses is an array of addresses required by the instructions
+      # 32 bytes each
+      # Array begins with compact-u16 number indicating how many addresses it contains. Must be in sequence
+      # 1. Accounts that are writable and signers
+      # 2. Accounts that are read-only and signers
+      # 3. Accuunts that are writable and not signers
+      # 4. Accounts that are read-only and not signers
+      key_count = Base.encode_compact_u16(account_keys.length)
+
+      # account_keys.map(&:key)
+
+      # recent blockhash
+      # 32 bytes
+
+      # instructions is an array of instructions to be executed
+      # 1. starts with compact-u16 count of instructions
+      # 2. program ID index: an u8 index that points to the program's address in the account addresses array. This is the program that will process the instruction
+      # 3. account indexes. an array of u8 indexes that point to the account addresses required for this instruction
+      # 4. instruction data. a byte array specifying which instructions to invoke on the program and any additional data required by the instruction (eg: function arguments)
 
       instruction_count = Base.encode_compact_u16(instructions.length)
-      sign_data += instruction_count
 
-      data = instructions.map do |instruction|
+      instructions = [
+        program_id_index,
+        account_indexes,
+        data
+      ]
 
-       instruction_layout = SolanaRails::DataTypes::Layout.new({
-          program_id_index: :uint8,
-          key_indices_count: SolanaRails::DataTypes::Blob.new(key_count.length),
-          key_indices: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::Blob.new(8)),
-          data_length: SolanaRails::DataTypes::Blob.new(key_count.length),
-          data: SolanaRails::DataTypes::Sequence.new(num_keys, SolanaRails::DataTypes::UnsignedInt.new(8)),
-       })
-
-        key_indices_count = Base.encode_compact_u16(instruction.accounts.length)
-        data_count = Base.encode_compact_u16(instruction.data.length)
-
-        instruction_layout.serialize({
-          program_id_index: instruction.program_id_index,
-          key_indices_count: key_indices_count,
-          key_indices: instruction.accounts,
-          data_length: data_count,
-          data: instruction.data
-        })
-      end.flatten
-
-      sign_data += data
+      (message_header + key_count + account_keys + [recent_blockhash] + instruction_count + instructions).flatten
     end
 
     def to_hash
       message = {
-        account_keys:     account_keys,
-        header:           header.to_h,
-        instructions:     instructions.map(&:to_h),
-        recent_blockhash: recent_blockhash
+        header:               header.to_h,
+        account_keys:         account_keys,
+        recent_blockhash:     recent_blockhash,
+        instructions:         instructions.map(&:to_h),
       }
       message[:address_table_lookups] = address_table_lookups if address_table_lookups.present?
       message

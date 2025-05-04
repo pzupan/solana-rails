@@ -3,6 +3,7 @@
 require_relative 'solana_rails/base'
 require_relative 'solana_rails/client'
 require_relative 'solana_rails/data_types'
+require_relative 'solana_rails/http_methods'
 require_relative 'solana_rails/keypair'
 require_relative "solana_rails/version"
 

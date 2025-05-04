@@ -7,19 +7,26 @@ require_relative 'base'
 require_relative 'http_methods'
 require_relative 'transaction_methods'
 require_relative 'websocket_methods'
-require_relative 'token/http_methods'
+#require_relative 'token/http_methods'
 
 module SolanaRails
   class Client
 
     include HttpMethods
-    include Token::HttpMethods
+    #include Token::HttpMethods
     include TransactionMethods
     include WebsocketMethods
 
     # mainnet-beta, testnet or devnet
-    def initialize(api_network='mainnet-beta')
-      @api_network = api_network
+    def initialize(api_network='MAINNET')
+      case api_network
+        when 'TESTNET', 'testnet', 't'
+          @api_network = 'testnet'
+        when 'MAINNET', 'mainnet', 'mainnet-beta', 'm'
+          @api_network = 'mainnet-beta'
+        else
+          @api_network = 'devnet'
+      end
     end
 
     private
@@ -35,12 +42,14 @@ module SolanaRails
       HTTPX.post("https://api.#{@api_network}.solana.com", json: body).then do |response|
         handle_response_http(response, &block)
       rescue => e
-        puts "HTTP request failed: #{e}"
+        context.fail!(error: "HTTP request failed: #{e}")
       end
     end
 
     def handle_response_http(response, &block)
-      if response.status == 200
+      if response.error.present?
+        context.fail!(error: response.error.message)
+      elsif response.status == 200
         result = JSON.parse(response.body)
         if block_given?
           yield result
@@ -48,7 +57,7 @@ module SolanaRails
           result
         end
       else
-        raise "Request failed"
+        context.fail!(error: 'Unknown failure at handle_response')
       end
     end
 

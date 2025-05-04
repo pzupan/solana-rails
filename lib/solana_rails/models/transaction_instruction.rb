@@ -8,7 +8,7 @@ module SolanaRails
       @token_program_id            = args[:token_program_id]
       @associated_token_program_id = args[:associated_token_program_id]
       @recent_blockhash            = args[:recent_blockhash]
-      @data                        = args[:data]
+      @data                        = args[:data]  || []
 
       error_check_keys
       error_check_recent_blockhash
@@ -35,16 +35,25 @@ module SolanaRails
       ordered_keys.map{ |k| k.pubkey } + [ token_program_id ] + system_keys.map{ |k| k.pubkey }
     end
 
+    def account_indexes
+      [*(0..(keys.length-1))]
+    end
+
     def header
       {
-        num_readonly_signed_accounts: count_read_only_signed_accounts,
+        num_readonly_signed_accounts:   count_read_only_signed_accounts,
         num_readonly_unsigned_accounts: count_read_only_unsigned_accounts,
-        num_required_signatures: count_required_signatures
+        num_required_signatures:        count_required_signatures
       }
     end
 
     def token_program_id
       @token_program_id
+    end
+
+    def program_id_index
+      return account_keys.index(token_program_id) if token_program_id.present?
+      account_keys.index(SYSTEM_PROGRAM_ID)
     end
 
     def associated_token_program_id
@@ -68,15 +77,20 @@ module SolanaRails
       }]
     end
 
-    def to_json
+    def to_hash
       transaction_instruction = {
         keys: ordered_keys.map{ |k| k.to_h },
         recent_blockhash: recent_blockhash,
         data: data.map{ |d| d.to_h }
       }
       transaction_instruction[:token_program_id] = token_program_id if token_program_id.present?
-      transaction_instruction[:associated_token_program_id] if associated_token_program_id.present?
-      transaction_instruction.to_json
+      transaction_instruction[:associated_token_program_id] = associated_token_program_id if associated_token_program_id.present?
+      transaction_instruction[:system_keys] = system_keys.map{ |k| k.to_h }
+      transaction_instruction
+    end
+
+    def to_json
+      to_hash.to_json
     end
 
     protected

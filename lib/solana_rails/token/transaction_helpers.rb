@@ -47,7 +47,7 @@ module SolanaRails
         )
 
         puts ''
-        puts "**** Transaction Instruction: #{transaction_instruction.to_json}"
+        puts "**** Transaction Instruction: #{transaction_instruction.to_hash}"
         puts ''
 
         message = SolanaRails::Message.from_transaction_instruction(transaction_instruction)
