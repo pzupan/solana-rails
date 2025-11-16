@@ -38,7 +38,7 @@ module SolanaRails
       raise 'must_include_at_least_one_keypair' if pubkeys.blank?
 
       message.account_keys.each do |pubkey|
-        debugger
+
         # get keypairs in sequence with account_keys
         keypair = payer_keypairs.detect{ |kp| kp[:public_key] == pubkey }
 
@@ -49,7 +49,7 @@ module SolanaRails
 
         signing_key = RbNaCl::Signatures::Ed25519::SigningKey.new(private_key_bytes)
 
-        signature = signing_key.sign(message.serialize.pack('C*')).bytes
+        signature = signing_key.sign(message.serialize)
 
         raise 'keypair_failed_to_produce_signature' if signature.blank?
         raise "signature_not_valid" unless signature.length == SIGNATURE_LENGTH
@@ -65,9 +65,11 @@ module SolanaRails
       transaction = Base.encode_compact_u16(signatures.length)
       signatures.each do |signature|
         raise 'signature_has_invalid_length' unless (signature.length == 64)
-        transaction += signature
+        transaction << signature
       end
-      transaction += message.serialize
+      transaction << message.serialize
+      puts "transaction serialize: #{transaction}"
+      transaction.join()
     end
 
     def to_hash
@@ -82,7 +84,7 @@ module SolanaRails
     end
 
     def to_base64
-      transaction = Base64.strict_encode64(serialize.pack('C*'))
+      transaction = Base64.strict_encode64(self.serialize)
       raise 'exceeds_maximum_transaction_size' if transaction.bytesize > MAXIMUM_TRANSACTION_SIZE
       transaction
     end

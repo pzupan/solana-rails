@@ -73,16 +73,21 @@ module SolanaRails
 
     def serialize
 
+      puts "SERIALIZE"
+
       # header specifies the number of signer and read-only accounts
       # 3 bytes
       #  1. u8 number of signatures required for this message to be considered valid, signer must be first key in account keys,
       #  2. u8 number of signed keys that are read only
       #  3. u8 number of unsigned keys that are read only
+
       message_header = [
-        header.num_required_signatures,
-        header.num_readonly_signed_accounts,
-        header.num_readonly_unsigned_accounts
+        Base.encode_u8(header.num_required_signatures),
+        Base.encode_u8(header.num_readonly_signed_accounts),
+        Base.encode_u8(header.num_readonly_unsigned_accounts)
       ]
+
+      puts "message_header: #{message_header.to_json}"
 
       # account addresses is an array of addresses required by the instructions
       # 32 bytes each
@@ -93,10 +98,18 @@ module SolanaRails
       # 4. Accounts that are read-only and not signers
       key_count = Base.encode_compact_u16(account_keys.length)
 
-      # account_keys.map(&:key)
+      puts "key_count: #{key_count.to_json}"
+
+      account_keys_bytes = account_keys.map{|key| Base.base58_to_bytes(key)}
+
+      puts "account_keys: #{(account_keys_bytes)}"
 
       # recent blockhash
       # 32 bytes
+
+      recent_blockhash_bytes = [Base.base58_to_bytes(recent_blockhash)]
+
+      puts "recent_blockhash: #{recent_blockhash_bytes}"
 
       # instructions is an array of instructions to be executed
       # 1. starts with compact-u16 count of instructions
@@ -106,13 +119,28 @@ module SolanaRails
 
       instruction_count = Base.encode_compact_u16(instructions.length)
 
+      puts "instruction_count: #{instruction_count.to_json}"
+
+      instruction_account_indexes = account_indexes.map{|ai| Base.encode_u8(ai)}
+
+      puts "instruction_account_indexes: #{instruction_account_indexes.to_json}"
+
+      instruction_data = nil
+      instruction_data = data.map{|d| Base.base58_to_bytes(d)} if data.present?
+
+      puts "instruction_data: #{instruction_data}"
+
       instructions = [
-        program_id_index,
-        account_indexes,
-        data
+        Base.encode_compact_u16(program_id_index),
+        instruction_account_indexes,
+        instruction_data
       ]
 
-      (message_header + key_count + account_keys + [recent_blockhash] + instruction_count + instructions).flatten
+      result = (message_header + key_count + account_keys_bytes + recent_blockhash_bytes + instruction_count + instructions).flatten
+
+      puts "instruction_result: #{result}"
+
+      result.join()
     end
 
     def to_hash

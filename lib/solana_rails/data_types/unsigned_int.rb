@@ -26,7 +26,7 @@ module SolanaRails
           raise "integer_to_large_to_fit_in_#{@size}_bytes"
         end
 
-        [obj].pack(@directive).bytes
+        [obj].pack(@directive)
       end
 
       # Deserialize bytes into the unsigned integer

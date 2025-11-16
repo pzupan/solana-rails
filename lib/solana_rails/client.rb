@@ -17,16 +17,11 @@ module SolanaRails
     include TransactionMethods
     include WebsocketMethods
 
+    BASE_URL = 'api.mainnet-beta.solana.com'
+
     # mainnet-beta, testnet or devnet
-    def initialize(api_network='MAINNET')
-      case api_network
-        when 'TESTNET', 'testnet', 't'
-          @api_network = 'testnet'
-        when 'MAINNET', 'mainnet', 'mainnet-beta', 'm'
-          @api_network = 'mainnet-beta'
-        else
-          @api_network = 'devnet'
-      end
+    def initialize(api_url=BASE_URL)
+      @api_url = api_url
     end
 
     private
@@ -39,7 +34,7 @@ module SolanaRails
       }
       body[:params] = params if params
 
-      HTTPX.post("https://api.#{@api_network}.solana.com", json: body).then do |response|
+      HTTPX.post("https://#{@api_url}", json: body).then do |response|
         handle_response_http(response, &block)
       rescue => e
         context.fail!(error: "HTTP request failed: #{e}")
@@ -47,14 +42,22 @@ module SolanaRails
     end
 
     def handle_response_http(response, &block)
-      if response.error.present?
-        context.fail!(error: response.error.message)
+      if response.try(:error).present?
+        context.fail!(error: response.error.try(:message))
       elsif response.status == 200
-        result = JSON.parse(response.body)
+        body = JSON.parse(response.body)
         if block_given?
-          yield result
+          yield body
         else
-          result
+          if (result = body['result']).present?
+            if (value = result['value']).present?
+              value
+            else
+              result
+            end
+          else
+            body
+          end
         end
       else
         context.fail!(error: 'Unknown failure at handle_response')
@@ -64,7 +67,7 @@ module SolanaRails
     def request_ws(method, params = nil, &block)
       result_queue = Queue.new
       EM.run do
-        ws = Faye::WebSocket::Client.new("wss://api.#{@api_network}.solana.com")
+        ws = Faye::WebSocket::Client.new("wss://#{@api_url}")
 
         ws.on :open do |event|
           body = {
