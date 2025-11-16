@@ -2,6 +2,10 @@
 
 This is a Rails wrapper for the [Solana RPC API](https://solana.com/docs/rpc).
 
+## WARNING
+
+The decryption of a key from Solana CLI or API will not work.  We are working on a solution to this.  It only affects decrypting from the CLI or API.  If you generate a key using ruby, decrypt works properl.
+
 
 ## Installation
 
